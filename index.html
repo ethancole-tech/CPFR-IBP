@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Collaborative Planning Console — Working Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#0F1620; --panel:#151F2B; --panel-raised:#1B2733; --line:#26333F;
+    --text:#E7ECF2; --muted:#7C8CA0;
+    --cpfr:#2DD4BF; --cpfr-dim:rgba(45,212,191,0.12);
+    --sop:#F5A623; --sop-dim:rgba(245,166,35,0.12);
+    --alert:#EF5350; --alert-dim:rgba(239,83,80,0.12);
+    --good:#6FCF97; --good-dim:rgba(111,207,151,0.12);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  .wrap{ max-width:1260px; margin:0 auto; padding:26px 22px 60px; }
+
+  header{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:16px; flex-wrap:wrap; gap:12px; }
+  .brand-eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  h1{ font-family:'Space Grotesk',sans-serif; font-size:25px; font-weight:700; margin:0; letter-spacing:-0.01em; }
+  .subtitle{ color:var(--muted); font-size:12.5px; margin-top:6px; max-width:560px; line-height:1.5; }
+  .save-state{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); text-align:right; }
+  .save-state .dot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--good); margin-right:6px; }
+
+  .kpi-strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px; }
+  .kpi{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .kpi-label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+  .kpi-value{ font-family:'Space Grotesk',sans-serif; font-size:23px; font-weight:700; }
+  .kpi-delta{ font-size:10.5px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
+  .up{ color:var(--good); } .down{ color:var(--alert); } .flat{ color:var(--muted); }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:18px; }
+  .zone{ padding:20px; background:var(--panel); }
+  .zone.cpfr{ border-right:1px solid var(--line); }
+  .zone-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .zone-tag{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; padding:4px 10px; border-radius:20px; }
+  .zone.cpfr .zone-tag{ background:var(--cpfr-dim); color:var(--cpfr); }
+  .zone.sop .zone-tag{ background:var(--sop-dim); color:var(--sop); }
+  .zone-title{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; margin:8px 0 2px; }
+  .zone-desc{ font-size:11.5px; color:var(--muted); line-height:1.5; max-width:340px; margin-bottom:14px; }
+
+  .partner-row{ display:flex; align-items:center; gap:8px; background:var(--panel-raised); border:1px solid var(--line); border-radius:10px; padding:9px 12px; margin-bottom:12px; font-size:11.5px; flex-wrap:wrap; }
+  .dot.us{ width:7px;height:7px;border-radius:50%; background:var(--cpfr); display:inline-block; }
+  .dot.partner{ width:7px;height:7px;border-radius:50%; background:var(--muted); display:inline-block; }
+  .partner-arrow{ color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; }
+
+  .steps{ display:flex; gap:4px; margin-bottom:6px; cursor:pointer; }
+  .step{ flex:1; height:7px; border-radius:3px; background:var(--line); transition:background .15s; }
+  .step.done{ background:var(--cpfr); }
+  .step-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:var(--muted); margin-bottom:14px; }
+  .step-hint{ font-size:10.5px; color:var(--muted); margin-bottom:14px; }
+
+  .list-title{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center; }
+  .exception{ display:flex; justify-content:space-between; align-items:center; padding:9px 11px; border-radius:8px; background:var(--panel-raised); border:1px solid var(--line); margin-bottom:7px; font-size:12px; gap:8px; }
+  .exception .sku{ font-family:'IBM Plex Mono',monospace; color:var(--text); font-size:11.5px; }
+  .exception .desc{ color:var(--muted); font-size:11px; margin-top:2px; }
+  .sev{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:3px 7px; border-radius:12px; white-space:nowrap; border:none; cursor:default; }
+  .sev.high{ background:var(--alert-dim); color:var(--alert); }
+  .sev.med{ background:var(--sop-dim); color:var(--sop); }
+  .sev.low{ background:var(--good-dim); color:var(--good); }
+  .resolve-btn{ font-family:'IBM Plex Mono',monospace; font-size:10px; background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 8px; cursor:pointer; white-space:nowrap; }
+  .resolve-btn:hover{ border-color:var(--cpfr); color:var(--cpfr); }
+  .empty-note{ font-size:11px; color:var(--muted); padding:10px 0; font-style:italic; }
+
+  .add-row{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .add-row input, .add-row select{ background:var(--panel-raised); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:7px 8px; font-size:11.5px; font-family:'Inter',sans-serif; }
+  .add-row input[type=text]{ flex:1; min-width:110px; }
+  .add-row button{ background:var(--cpfr); border:none; color:#0F1620; font-weight:600; border-radius:6px; padding:7px 12px; font-size:11.5px; cursor:pointer; }
+  .add-row button:hover{ opacity:0.85; }
+
+  .cycle{ display:flex; gap:6px; margin-bottom:16px; }
+  .cycle-step{ flex:1; text-align:center; padding:9px 4px; border-radius:8px; background:var(--panel-raised); border:1px solid var(--line); cursor:pointer; transition:.15s; }
+  .cycle-step:hover{ border-color:var(--sop); }
+  .cycle-step.current{ border-color:var(--sop); background:var(--sop-dim); }
+  .cycle-step .n{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted); }
+  .cycle-step.current .n{ color:var(--sop); }
+  .cycle-step .lbl{ font-size:9.5px; margin-top:3px; line-height:1.25; }
+
+  .func-row{ margin-bottom:12px; }
+  .func-head{ display:flex; justify-content:space-between; align-items:center; font-size:11.5px; margin-bottom:5px; }
+  .func-head .name{ color:var(--text); }
+  .func-head input{ width:80px; background:var(--panel-raised); border:1px solid var(--line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:11px; border-radius:5px; padding:3px 6px; text-align:right; }
+  .bar-track{ height:8px; background:var(--panel-raised); border-radius:4px; overflow:hidden; border:1px solid var(--line); }
+  .bar-fill{ height:100%; border-radius:4px; transition:width .2s; }
+
+  .bridge{ position:relative; margin:0 0 20px; padding:18px 22px; border:1px solid var(--line); border-radius:14px; background:linear-gradient(90deg, var(--cpfr-dim), var(--panel) 40%, var(--panel) 60%, var(--sop-dim)); }
+  .bridge-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
+  .bridge-title{ font-family:'Space Grotesk',sans-serif; font-size:13.5px; font-weight:600; }
+  .bridge-note{ font-size:10.5px; color:var(--muted); }
+  .bridge-flow{ display:flex; align-items:center; }
+  .flow-node{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:5px; width:130px; }
+  .flow-node .badge{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9.5px; border:1px solid var(--line); }
+  .flow-node .cap{ font-size:10px; color:var(--muted); text-align:center; line-height:1.3; }
+  .flow-line{ flex:1; height:1px; background:repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 11px); position:relative; top:-16px; }
+  .escalated-badge{ font-family:'IBM Plex Mono',monospace; font-size:9px; background:var(--alert-dim); color:var(--alert); padding:2px 6px; border-radius:10px; }
+
+  .reset-row{ text-align:center; margin-top:6px; }
+  .reset-btn{ background:transparent; border:1px solid var(--line); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:6px 12px; border-radius:8px; cursor:pointer; }
+  .reset-btn:hover{ color:var(--alert); border-color:var(--alert); }
+
+  footer{ margin-top:14px; font-size:10.5px; color:var(--muted); text-align:center; font-family:'IBM Plex Mono',monospace; }
+
+  @media (max-width:860px){
+    .split{ grid-template-columns:1fr; }
+    .zone.cpfr{ border-right:none; border-bottom:1px solid var(--line); }
+    .kpi-strip{ grid-template-columns:1fr 1fr; }
+    .bridge-flow{ flex-direction:column; gap:14px; }
+    .flow-line{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand-eyebrow">Final Year Project · Working Prototype</div>
+      <h1>Collaborative Planning Console</h1>
+      <div class="subtitle">Live console: add/resolve CPFR exceptions, move through the S&OP cycle, edit the plan figures — every change recalculates the KPIs and the eS&OP bridge below.</div>
+    </div>
+    <div class="save-state" id="saveState"><span class="dot"></span>Ready</div>
+  </header>
+
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <div class="split">
+    <div class="zone cpfr">
+      <div class="zone-head"><span class="zone-tag">Inter-firm</span></div>
+      <div class="zone-title">CPFR — Trading Partner Collaboration</div>
+      <div class="zone-desc">Click a step to mark VICS process progress. Add or resolve live exceptions between your company and the retail partner.</div>
+
+      <div class="partner-row">
+        <span class="dot us"></span> Our Company
+        <span class="partner-arrow">⇄ shared POS &amp; order data ⇄</span>
+        <span class="dot partner"></span> Retail Partner — Partner Co.
+      </div>
+
+      <div class="steps" id="cpfrSteps"></div>
+      <div class="step-labels">
+        <span>Agree</span><span>Plan</span><span>Forecast</span><span>Identify</span><span>Resolve</span><span>Order fc.</span><span>Generate</span><span>Ship</span><span>Replenish</span>
+      </div>
+
+      <div class="list-title">Exception Queue <span id="cpfrCount" class="mono"></span></div>
+      <div id="cpfrList"></div>
+
+      <div class="add-row">
+        <input type="text" id="newSku" placeholder="SKU / location">
+        <input type="text" id="newDesc" placeholder="Description">
+        <select id="newSev">
+          <option value="high">High</option>
+          <option value="med" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <button id="addException">Add</button>
+      </div>
+    </div>
+
+    <div class="zone sop">
+      <div class="zone-head"><span class="zone-tag">Intra-firm</span></div>
+      <div class="zone-title">S&OP — Cross-Functional Reconciliation</div>
+      <div class="zone-desc">Click a stage to move the monthly cycle forward. Edit the figures below — capacity vs. forecast gap drives the KPI strip.</div>
+
+      <div class="cycle" id="sopCycle"></div>
+
+      <div class="list-title">Functional Plan (units)</div>
+      <div class="func-row">
+        <div class="func-head"><span class="name">Sales forecast</span><input type="number" id="salesForecast" step="100"></div>
+        <div class="bar-track"><div class="bar-fill" id="barSales" style="background:var(--sop);"></div></div>
+      </div>
+      <div class="func-row">
+        <div class="func-head"><span class="name">Production capacity</span><input type="number" id="prodCapacity" step="100"></div>
+        <div class="bar-track"><div class="bar-fill" id="barProd" style="background:var(--cpfr);"></div></div>
+      </div>
+      <div class="func-row">
+        <div class="func-head"><span class="name">Finance-approved plan</span><input type="number" id="financePlan" step="100"></div>
+        <div class="bar-track"><div class="bar-fill" id="barFinance" style="background:var(--good);"></div></div>
+      </div>
+
+      <div class="list-title">Escalated to Executive Review <span class="mono" style="font-size:9.5px;">(auto-fed from resolved High CPFR items)</span></div>
+      <div id="sopEscalations"></div>
+    </div>
+  </div>
+
+  <div class="bridge">
+    <div class="bridge-head">
+      <div class="bridge-title">The eS&OP bridge — live</div>
+      <div class="bridge-note" id="bridgeNote">Resolve a High-severity CPFR exception to see it flow through</div>
+    </div>
+    <div class="bridge-flow">
+      <div class="flow-node"><div class="badge" style="border-color:var(--cpfr);color:var(--cpfr);">CPFR</div><div class="cap">Partner forecast &amp; exception data</div></div>
+      <div class="flow-line"></div>
+      <div class="flow-node"><div class="badge" style="border-color:var(--muted);color:var(--muted);" id="inBadge">0</div><div class="cap">Consolidated into internal demand signal</div></div>
+      <div class="flow-line"></div>
+      <div class="flow-node"><div class="badge" style="border-color:var(--sop);color:var(--sop);">S&amp;OP</div><div class="cap">Reconciled with supply &amp; finance capacity</div></div>
+      <div class="flow-line"></div>
+      <div class="flow-node"><div class="badge" style="border-color:var(--good);color:var(--good);" id="outBadge">✓</div><div class="cap">One unified operating plan</div></div>
+    </div>
+  </div>
+
+  <div class="reset-row"><button class="reset-btn" id="resetBtn">Reset to demo defaults</button></div>
+  <footer>Working prototype · state persists in your browser session via window.storage · figures are illustrative, not live ERP data</footer>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'cpfr-sop-console-state-v1';
+
+const defaultState = {
+  cpfrStepIndex: 5, // 0-8, number of steps marked "done" up to and including this index
+  sopStepIndex: 2,
+  sales: 104200,
+  prod: 96800,
+  finance: 98500,
+  cpfrExceptions: [
+    { id: 'e1', sku: 'SKU-2281 · North DC', desc: 'POS demand 18% above joint forecast', sev: 'high' },
+    { id: 'e2', sku: 'SKU-0937 · Promo W28', desc: 'Order forecast unconfirmed by partner', sev: 'med' },
+    { id: 'e3', sku: 'SKU-4410 · Replenishment', desc: 'Lead time variance within threshold', sev: 'low' }
+  ],
+  sopEscalations: [
+    { id: 's1', sku: 'Region: North', desc: 'Capacity shortfall vs. sales forecast — needs decision', sev: 'high' },
+    { id: 's2', sku: 'Product line: Beverages', desc: 'Finance flags margin risk on proposed volume', sev: 'med' }
+  ],
+  resolvedFromCpfr: 0
+};
+
+let state = JSON.parse(JSON.stringify(defaultState));
+
+const CPFR_LABELS = ['Agree','Plan','Forecast','Identify','Resolve','Order fc.','Generate','Ship','Replenish'];
+const SOP_LABELS = [
+  { n:'01', lbl:'Data\ngathering' },
+  { n:'02', lbl:'Demand\nreview' },
+  { n:'03', lbl:'Supply\nreview' },
+  { n:'04', lbl:'Pre-S&OP\nreconcile' },
+  { n:'05', lbl:'Executive\nS&OP' }
+];
+
+function setSaveState(text, color){
+  const el = document.getElementById('saveState');
+  el.innerHTML = '<span class="dot" style="background:'+color+'"></span>'+text;
+}
+
+async function saveState(){
+  try{
+    setSaveState('Saving…', '#F5A623');
+    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    if(res){ setSaveState('Saved', '#6FCF97'); } else { setSaveState('Save failed', '#EF5350'); }
+  }catch(err){
+    setSaveState('Storage unavailable — using session only', '#EF5350');
+  }
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      state = JSON.parse(res.value);
+      setSaveState('Loaded saved session', '#6FCF97');
+    } else {
+      setSaveState('New session', '#7C8CA0');
+    }
+  }catch(err){
+    setSaveState('New session (no saved state)', '#7C8CA0');
+  }
+  render();
+}
+
+function uid(){ return 'x' + Math.random().toString(36).slice(2,9); }
+
+function sevClass(sev){ return sev === 'high' ? 'high' : sev === 'med' ? 'med' : 'low'; }
+function sevLabel(sev){ return sev === 'high' ? 'High' : sev === 'med' ? 'Medium' : 'Low'; }
+
+function renderKpis(){
+  const gapPct = ((state.prod - state.sales) / state.sales) * 100;
+  const openExceptions = state.cpfrExceptions.length;
+  const accuracy = Math.max(60, Math.min(99, 100 - Math.abs(gapPct) * 1.3)).toFixed(1);
+  const reconciled = Math.max(40, Math.min(100, 100 - (openExceptions * 3) - Math.abs(gapPct) * 1.5)).toFixed(0);
+
+  const kpis = [
+    { label:'Forecast Accuracy', value: accuracy + '%', delta: gapPct <= 0 ? 'Supply constrained' : 'Supply ahead of demand', cls: gapPct <= 0 ? 'down' : 'up' },
+    { label:'Open CPFR Exceptions', value: openExceptions, delta: openExceptions === 0 ? 'Queue clear' : openExceptions + ' pending review', cls: openExceptions === 0 ? 'up' : 'down' },
+    { label:'Demand–Supply Gap', value: gapPct.toFixed(1) + '%', delta: gapPct < 0 ? 'Supply short vs. plan' : 'Supply covers plan', cls: gapPct < 0 ? 'down' : 'up' },
+    { label:'Plan Reconciled', value: reconciled + '%', delta: reconciled >= 90 ? 'On track for exec review' : 'Needs alignment work', cls: reconciled >= 90 ? 'up' : 'flat' }
+  ];
+
+  document.getElementById('kpiStrip').innerHTML = kpis.map(k => `
+    <div class="kpi">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-delta ${k.cls}">${k.delta}</div>
+    </div>
+  `).join('');
+}
+
+function renderCpfrSteps(){
+  const el = document.getElementById('cpfrSteps');
+  el.innerHTML = CPFR_LABELS.map((_, i) => `<div class="step ${i <= state.cpfrStepIndex ? 'done' : ''}" data-i="${i}"></div>`).join('');
+  el.querySelectorAll('.step').forEach(s => s.addEventListener('click', () => {
+    state.cpfrStepIndex = parseInt(s.dataset.i);
+    render(); saveState();
+  }));
+}
+
+function renderSopCycle(){
+  const el = document.getElementById('sopCycle');
+  el.innerHTML = SOP_LABELS.map((s, i) => `
+    <div class="cycle-step ${i === state.sopStepIndex ? 'current' : ''}" data-i="${i}">
+      <div class="n">${s.n}</div><div class="lbl">${s.lbl.split('\n').join('<br>')}</div>
+    </div>`).join('');
+  el.querySelectorAll('.cycle-step').forEach(s => s.addEventListener('click', () => {
+    state.sopStepIndex = parseInt(s.dataset.i);
+    render(); saveState();
+  }));
+}
+
+function renderExceptionList(){
+  document.getElementById('cpfrCount').textContent = `(${state.cpfrExceptions.length})`;
+  const el = document.getElementById('cpfrList');
+  if(state.cpfrExceptions.length === 0){
+    el.innerHTML = '<div class="empty-note">No open exceptions — queue is clear.</div>';
+    return;
+  }
+  el.innerHTML = state.cpfrExceptions.map(e => `
+    <div class="exception">
+      <div><div class="sku">${e.sku}</div><div class="desc">${e.desc}</div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="sev ${sevClass(e.sev)}">${sevLabel(e.sev)}</span>
+        <button class="resolve-btn" data-id="${e.id}">Resolve</button>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.resolve-btn').forEach(b => b.addEventListener('click', () => resolveException(b.dataset.id)));
+}
+
+function resolveException(id){
+  const idx = state.cpfrExceptions.findIndex(e => e.id === id);
+  if(idx === -1) return;
+  const ex = state.cpfrExceptions[idx];
+  state.cpfrExceptions.splice(idx, 1);
+  state.resolvedFromCpfr += 1;
+
+  if(ex.sev === 'high'){
+    state.sopEscalations.unshift({
+      id: uid(),
+      sku: ex.sku,
+      desc: 'Escalated from resolved CPFR exception: ' + ex.desc,
+      sev: 'high'
+    });
+  }
+  render(); saveState();
+}
+
+function renderEscalations(){
+  const el = document.getElementById('sopEscalations');
+  if(state.sopEscalations.length === 0){
+    el.innerHTML = '<div class="empty-note">No items escalated to executive review.</div>';
+    return;
+  }
+  el.innerHTML = state.sopEscalations.map(e => `
+    <div class="exception">
+      <div><div class="sku">${e.sku}</div><div class="desc">${e.desc}</div></div>
+      <span class="sev ${sevClass(e.sev)}">${sevLabel(e.sev)}</span>
+    </div>
+  `).join('');
+}
+
+function renderFunctionalPlan(){
+  document.getElementById('salesForecast').value = state.sales;
+  document.getElementById('prodCapacity').value = state.prod;
+  document.getElementById('financePlan').value = state.finance;
+
+  const max = Math.max(state.sales, state.prod, state.finance) || 1;
+  document.getElementById('barSales').style.width = (state.sales / max * 100) + '%';
+  document.getElementById('barProd').style.width = (state.prod / max * 100) + '%';
+  document.getElementById('barFinance').style.width = (state.finance / max * 100) + '%';
+}
+
+function renderBridge(){
+  document.getElementById('inBadge').textContent = state.resolvedFromCpfr;
+  document.getElementById('bridgeNote').textContent =
+    state.resolvedFromCpfr === 0
+      ? 'Resolve a High-severity CPFR exception to see it flow through'
+      : state.resolvedFromCpfr + ' CPFR exception(s) consolidated into the internal demand signal so far';
+}
+
+function render(){
+  renderKpis();
+  renderCpfrSteps();
+  renderSopCycle();
+  renderExceptionList();
+  renderEscalations();
+  renderFunctionalPlan();
+  renderBridge();
+}
+
+document.getElementById('addException').addEventListener('click', () => {
+  const sku = document.getElementById('newSku').value.trim();
+  const desc = document.getElementById('newDesc').value.trim();
+  const sev = document.getElementById('newSev').value;
+  if(!sku || !desc) return;
+  state.cpfrExceptions.unshift({ id: uid(), sku, desc, sev });
+  document.getElementById('newSku').value = '';
+  document.getElementById('newDesc').value = '';
+  render(); saveState();
+});
+
+['salesForecast','prodCapacity','financePlan'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    if(id === 'salesForecast') state.sales = val;
+    if(id === 'prodCapacity') state.prod = val;
+    if(id === 'financePlan') state.finance = val;
+    renderKpis(); renderFunctionalPlan(); saveState();
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  state = JSON.parse(JSON.stringify(defaultState));
+  render(); saveState();
+});
+
+loadState();
+</script>
+</body>
+</html>
