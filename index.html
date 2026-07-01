@@ -2,277 +2,555 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Collaborative Planning Console — Working Prototype</title>
+<title>Concord — Collaborative Planning Suite</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
   :root{
-    --bg:#0F1620; --panel:#151F2B; --panel-raised:#1B2733; --line:#26333F;
-    --text:#E7ECF2; --muted:#7C8CA0;
-    --cpfr:#2DD4BF; --cpfr-dim:rgba(45,212,191,0.12);
-    --sop:#F5A623; --sop-dim:rgba(245,166,35,0.12);
-    --alert:#EF5350; --alert-dim:rgba(239,83,80,0.12);
-    --good:#6FCF97; --good-dim:rgba(111,207,151,0.12);
+    --sidebar-bg:#0B1220;
+    --sidebar-text:#94A3B8;
+    --sidebar-active-bg:rgba(255,255,255,0.08);
+    --sidebar-active-text:#FFFFFF;
+    --bg:#F4F5F7;
+    --card:#FFFFFF;
+    --border:#E3E6EB;
+    --text:#111827;
+    --muted:#6B7280;
+    --cpfr:#0EA5A0;
+    --cpfr-tint:#E3F7F6;
+    --sop:#D97706;
+    --sop-tint:#FDF3E3;
+    --alert:#DC2626;
+    --alert-tint:#FCEBEB;
+    --good:#059669;
+    --good-tint:#E4F5EF;
+    --info:#4C6FFF;
+    --info-tint:#EBEFFF;
   }
   *{ box-sizing:border-box; }
-  html,body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+  html,body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; }
   .mono{ font-family:'IBM Plex Mono',monospace; }
-  .wrap{ max-width:1260px; margin:0 auto; padding:26px 22px 60px; }
+  svg.icon{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
 
-  header{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:16px; flex-wrap:wrap; gap:12px; }
-  .brand-eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-  h1{ font-family:'Space Grotesk',sans-serif; font-size:25px; font-weight:700; margin:0; letter-spacing:-0.01em; }
-  .subtitle{ color:var(--muted); font-size:12.5px; margin-top:6px; max-width:560px; line-height:1.5; }
-  .save-state{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); text-align:right; }
-  .save-state .dot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--good); margin-right:6px; }
+  .app{ display:grid; grid-template-columns:236px 1fr; min-height:100vh; }
 
-  .kpi-strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px; }
-  .kpi{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
-  .kpi-label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
-  .kpi-value{ font-family:'Space Grotesk',sans-serif; font-size:23px; font-weight:700; }
-  .kpi-delta{ font-size:10.5px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
+  /* SIDEBAR */
+  .sidebar{ background:var(--sidebar-bg); color:var(--sidebar-text); padding:20px 14px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; }
+  .brand{ display:flex; align-items:center; gap:9px; padding:6px 8px 20px; border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:16px; }
+  .brand-mark{ width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg, var(--cpfr), var(--sop)); flex:none; }
+  .brand-name{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15.5px; color:#fff; letter-spacing:-0.01em; }
+  .brand-sub{ font-size:9.5px; color:#64748B; text-transform:uppercase; letter-spacing:.08em; margin-top:1px; }
+
+  .navgroup-label{ font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#4B5A70; padding:14px 10px 6px; }
+  .navitem{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500; margin-bottom:2px; color:var(--sidebar-text); transition:.12s; }
+  .navitem:hover{ background:rgba(255,255,255,0.05); color:#fff; }
+  .navitem.active{ background:var(--sidebar-active-bg); color:var(--sidebar-active-text); }
+  .navitem .badge{ margin-left:auto; background:var(--alert); color:#fff; font-size:9.5px; font-family:'IBM Plex Mono',monospace; padding:1px 6px; border-radius:10px; }
+
+  .sidebar-foot{ margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); font-size:10.5px; color:#4B5A70; font-family:'IBM Plex Mono',monospace; display:flex; justify-content:space-between; align-items:center; }
+  .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--good); display:inline-block; margin-right:5px; }
+
+  /* MAIN */
+  .main{ padding:0; overflow-x:hidden; }
+  .topbar{ background:var(--card); border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:5; }
+  .breadcrumb{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16.5px; }
+  .breadcrumb span{ color:var(--muted); font-weight:400; font-size:13px; margin-right:6px; }
+  .topbar-right{ display:flex; align-items:center; gap:14px; }
+  .search-box{ display:flex; align-items:center; gap:7px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:7px 10px; width:220px; color:var(--muted); }
+  .search-box input{ border:none; background:transparent; outline:none; font-size:12.5px; width:100%; color:var(--text); }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--muted); cursor:pointer; }
+  .icon-btn .dot{ position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--alert); border:1.5px solid var(--card); }
+  .avatar{ width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--cpfr),var(--sop)); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; }
+
+  .page{ padding:24px 28px 60px; display:none; }
+  .page.active{ display:block; }
+  .page-sub{ color:var(--muted); font-size:12.5px; margin:-4px 0 20px; max-width:640px; line-height:1.5; }
+
+  /* KPI CARDS */
+  .kpi-strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+  .kpi{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .kpi-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:9px; display:flex; justify-content:space-between; align-items:center; }
+  .kpi-value{ font-family:'Space Grotesk',sans-serif; font-size:25px; font-weight:700; }
+  .kpi-delta{ font-size:11px; margin-top:5px; font-family:'IBM Plex Mono',monospace; }
   .up{ color:var(--good); } .down{ color:var(--alert); } .flat{ color:var(--muted); }
 
-  .split{ display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:18px; }
-  .zone{ padding:20px; background:var(--panel); }
-  .zone.cpfr{ border-right:1px solid var(--line); }
-  .zone-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .zone-tag{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; padding:4px 10px; border-radius:20px; }
-  .zone.cpfr .zone-tag{ background:var(--cpfr-dim); color:var(--cpfr); }
-  .zone.sop .zone-tag{ background:var(--sop-dim); color:var(--sop); }
-  .zone-title{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; margin:8px 0 2px; }
-  .zone-desc{ font-size:11.5px; color:var(--muted); line-height:1.5; max-width:340px; margin-bottom:14px; }
+  /* CARDS / PANELS */
+  .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:16px; }
+  .panel{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; }
+  .panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .panel-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; }
+  .panel-note{ font-size:11px; color:var(--muted); }
+  .tag{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px; border-radius:20px; }
+  .tag.cpfr{ background:var(--cpfr-tint); color:var(--cpfr); }
+  .tag.sop{ background:var(--sop-tint); color:var(--sop); }
 
-  .partner-row{ display:flex; align-items:center; gap:8px; background:var(--panel-raised); border:1px solid var(--line); border-radius:10px; padding:9px 12px; margin-bottom:12px; font-size:11.5px; flex-wrap:wrap; }
-  .dot.us{ width:7px;height:7px;border-radius:50%; background:var(--cpfr); display:inline-block; }
-  .dot.partner{ width:7px;height:7px;border-radius:50%; background:var(--muted); display:inline-block; }
-  .partner-arrow{ color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; }
+  /* PILLS / TABS */
+  .pill-row{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .pill{ padding:7px 13px; border-radius:20px; border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; color:var(--muted); background:var(--card); }
+  .pill.active{ background:var(--text); color:#fff; border-color:var(--text); }
 
+  /* STEP TRACKER */
   .steps{ display:flex; gap:4px; margin-bottom:6px; cursor:pointer; }
-  .step{ flex:1; height:7px; border-radius:3px; background:var(--line); transition:background .15s; }
+  .step{ flex:1; height:7px; border-radius:3px; background:var(--border); }
   .step.done{ background:var(--cpfr); }
-  .step-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:var(--muted); margin-bottom:14px; }
-  .step-hint{ font-size:10.5px; color:var(--muted); margin-bottom:14px; }
+  .step-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:var(--muted); margin-bottom:16px; }
 
-  .list-title{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center; }
-  .exception{ display:flex; justify-content:space-between; align-items:center; padding:9px 11px; border-radius:8px; background:var(--panel-raised); border:1px solid var(--line); margin-bottom:7px; font-size:12px; gap:8px; }
-  .exception .sku{ font-family:'IBM Plex Mono',monospace; color:var(--text); font-size:11.5px; }
-  .exception .desc{ color:var(--muted); font-size:11px; margin-top:2px; }
-  .sev{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:3px 7px; border-radius:12px; white-space:nowrap; border:none; cursor:default; }
-  .sev.high{ background:var(--alert-dim); color:var(--alert); }
-  .sev.med{ background:var(--sop-dim); color:var(--sop); }
-  .sev.low{ background:var(--good-dim); color:var(--good); }
-  .resolve-btn{ font-family:'IBM Plex Mono',monospace; font-size:10px; background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; padding:5px 8px; cursor:pointer; white-space:nowrap; }
-  .resolve-btn:hover{ border-color:var(--cpfr); color:var(--cpfr); }
-  .empty-note{ font-size:11px; color:var(--muted); padding:10px 0; font-style:italic; }
-
-  .add-row{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
-  .add-row input, .add-row select{ background:var(--panel-raised); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:7px 8px; font-size:11.5px; font-family:'Inter',sans-serif; }
-  .add-row input[type=text]{ flex:1; min-width:110px; }
-  .add-row button{ background:var(--cpfr); border:none; color:#0F1620; font-weight:600; border-radius:6px; padding:7px 12px; font-size:11.5px; cursor:pointer; }
-  .add-row button:hover{ opacity:0.85; }
-
-  .cycle{ display:flex; gap:6px; margin-bottom:16px; }
-  .cycle-step{ flex:1; text-align:center; padding:9px 4px; border-radius:8px; background:var(--panel-raised); border:1px solid var(--line); cursor:pointer; transition:.15s; }
+  .cycle{ display:flex; gap:6px; margin-bottom:18px; }
+  .cycle-step{ flex:1; text-align:center; padding:10px 4px; border-radius:9px; background:var(--bg); border:1px solid var(--border); cursor:pointer; }
   .cycle-step:hover{ border-color:var(--sop); }
-  .cycle-step.current{ border-color:var(--sop); background:var(--sop-dim); }
+  .cycle-step.current{ border-color:var(--sop); background:var(--sop-tint); }
   .cycle-step .n{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted); }
   .cycle-step.current .n{ color:var(--sop); }
   .cycle-step .lbl{ font-size:9.5px; margin-top:3px; line-height:1.25; }
 
-  .func-row{ margin-bottom:12px; }
-  .func-head{ display:flex; justify-content:space-between; align-items:center; font-size:11.5px; margin-bottom:5px; }
-  .func-head .name{ color:var(--text); }
-  .func-head input{ width:80px; background:var(--panel-raised); border:1px solid var(--line); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:11px; border-radius:5px; padding:3px 6px; text-align:right; }
-  .bar-track{ height:8px; background:var(--panel-raised); border-radius:4px; overflow:hidden; border:1px solid var(--line); }
-  .bar-fill{ height:100%; border-radius:4px; transition:width .2s; }
+  /* TABLE */
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  thead th{ text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); padding:0 10px 10px; border-bottom:1px solid var(--border); font-weight:600; cursor:pointer; user-select:none; }
+  thead th:hover{ color:var(--text); }
+  tbody td{ padding:11px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .sku{ font-family:'IBM Plex Mono',monospace; font-size:12px; }
+  .desc-muted{ color:var(--muted); font-size:11.5px; margin-top:2px; }
+  .sev{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:3px 8px; border-radius:12px; white-space:nowrap; }
+  .sev.high{ background:var(--alert-tint); color:var(--alert); }
+  .sev.med{ background:var(--sop-tint); color:var(--sop); }
+  .sev.low{ background:var(--good-tint); color:var(--good); }
+  .resolve-btn{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:7px; padding:6px 10px; cursor:pointer; }
+  .resolve-btn:hover{ border-color:var(--cpfr); color:var(--cpfr); }
+  .empty-note{ font-size:12px; color:var(--muted); padding:16px 4px; font-style:italic; text-align:center; }
 
-  .bridge{ position:relative; margin:0 0 20px; padding:18px 22px; border:1px solid var(--line); border-radius:14px; background:linear-gradient(90deg, var(--cpfr-dim), var(--panel) 40%, var(--panel) 60%, var(--sop-dim)); }
+  .add-row{ display:flex; gap:7px; margin-top:14px; flex-wrap:wrap; }
+  .add-row input, .add-row select{ background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:12px; font-family:'Inter',sans-serif; }
+  .add-row input[type=text]{ flex:1; min-width:120px; }
+  .btn-primary{ background:var(--text); border:none; color:#fff; font-weight:600; border-radius:8px; padding:8px 16px; font-size:12px; cursor:pointer; }
+  .btn-primary:hover{ opacity:.85; }
+
+  /* FUNCTIONAL PLAN */
+  .func-row{ margin-bottom:14px; }
+  .func-head{ display:flex; justify-content:space-between; align-items:center; font-size:12.5px; margin-bottom:6px; }
+  .func-head input{ width:90px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; border-radius:6px; padding:5px 8px; text-align:right; }
+  .bar-track{ height:9px; background:var(--bg); border-radius:5px; overflow:hidden; border:1px solid var(--border); }
+  .bar-fill{ height:100%; border-radius:5px; transition:width .2s; }
+
+  /* CHARTS */
+  .chart-wrap{ width:100%; }
+  .legend{ display:flex; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+  .legend-dot{ width:8px; height:8px; border-radius:2px; }
+  .donut-wrap{ display:flex; align-items:center; gap:20px; }
+  .donut{ width:120px; height:120px; border-radius:50%; flex:none; }
+  .donut-legend{ display:flex; flex-direction:column; gap:8px; font-size:12px; }
+
+  /* BRIDGE */
+  .bridge{ padding:18px 22px; border:1px solid var(--border); border-radius:14px; background:linear-gradient(90deg, var(--cpfr-tint), var(--card) 40%, var(--card) 60%, var(--sop-tint)); margin-bottom:16px; }
   .bridge-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px; }
   .bridge-title{ font-family:'Space Grotesk',sans-serif; font-size:13.5px; font-weight:600; }
   .bridge-note{ font-size:10.5px; color:var(--muted); }
   .bridge-flow{ display:flex; align-items:center; }
   .flow-node{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:5px; width:130px; }
-  .flow-node .badge{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9.5px; border:1px solid var(--line); }
+  .flow-node .badge{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9.5px; border:1.5px solid; background:var(--card); }
   .flow-node .cap{ font-size:10px; color:var(--muted); text-align:center; line-height:1.3; }
-  .flow-line{ flex:1; height:1px; background:repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 11px); position:relative; top:-16px; }
-  .escalated-badge{ font-family:'IBM Plex Mono',monospace; font-size:9px; background:var(--alert-dim); color:var(--alert); padding:2px 6px; border-radius:10px; }
+  .flow-line{ flex:1; height:1px; background:repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 11px); position:relative; top:-16px; }
 
-  .reset-row{ text-align:center; margin-top:6px; }
-  .reset-btn{ background:transparent; border:1px solid var(--line); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:6px 12px; border-radius:8px; cursor:pointer; }
-  .reset-btn:hover{ color:var(--alert); border-color:var(--alert); }
+  .partner-table td.name{ font-weight:600; }
+  .status-live{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--good); }
+  .status-live .d{ width:6px; height:6px; border-radius:50%; background:var(--good); }
 
-  footer{ margin-top:14px; font-size:10.5px; color:var(--muted); text-align:center; font-family:'IBM Plex Mono',monospace; }
+  .settings-row{ display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border); }
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-label{ font-weight:600; font-size:13px; }
+  .settings-desc{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .toggle{ width:38px; height:22px; border-radius:20px; background:var(--border); position:relative; cursor:pointer; transition:.15s; flex:none; }
+  .toggle.on{ background:var(--cpfr); }
+  .toggle .knob{ width:16px; height:16px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+  .toggle.on .knob{ left:19px; }
 
-  @media (max-width:860px){
-    .split{ grid-template-columns:1fr; }
-    .zone.cpfr{ border-right:none; border-bottom:1px solid var(--line); }
-    .kpi-strip{ grid-template-columns:1fr 1fr; }
-    .bridge-flow{ flex-direction:column; gap:14px; }
-    .flow-line{ display:none; }
+  @media (max-width:980px){
+    .app{ grid-template-columns:1fr; }
+    .sidebar{ position:relative; height:auto; flex-direction:row; flex-wrap:wrap; }
+    .kpi-strip, .grid-2{ grid-template-columns:1fr; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
 
-  <header>
-    <div>
-      <div class="brand-eyebrow">Final Year Project · Working Prototype</div>
-      <h1>Collaborative Planning Console</h1>
-      <div class="subtitle">Live console: add/resolve CPFR exceptions, move through the S&OP cycle, edit the plan figures — every change recalculates the KPIs and the eS&OP bridge below.</div>
-    </div>
-    <div class="save-state" id="saveState"><span class="dot"></span>Ready</div>
-  </header>
-
-  <div class="kpi-strip" id="kpiStrip"></div>
-
-  <div class="split">
-    <div class="zone cpfr">
-      <div class="zone-head"><span class="zone-tag">Inter-firm</span></div>
-      <div class="zone-title">CPFR — Trading Partner Collaboration</div>
-      <div class="zone-desc">Click a step to mark VICS process progress. Add or resolve live exceptions between your company and the retail partner.</div>
-
-      <div class="partner-row">
-        <span class="dot us"></span> Our Company
-        <span class="partner-arrow">⇄ shared POS &amp; order data ⇄</span>
-        <span class="dot partner"></span> Retail Partner — Partner Co.
-      </div>
-
-      <div class="steps" id="cpfrSteps"></div>
-      <div class="step-labels">
-        <span>Agree</span><span>Plan</span><span>Forecast</span><span>Identify</span><span>Resolve</span><span>Order fc.</span><span>Generate</span><span>Ship</span><span>Replenish</span>
-      </div>
-
-      <div class="list-title">Exception Queue <span id="cpfrCount" class="mono"></span></div>
-      <div id="cpfrList"></div>
-
-      <div class="add-row">
-        <input type="text" id="newSku" placeholder="SKU / location">
-        <input type="text" id="newDesc" placeholder="Description">
-        <select id="newSev">
-          <option value="high">High</option>
-          <option value="med" selected>Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <button id="addException">Add</button>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">Concord</div>
+        <div class="brand-sub">Planning Suite</div>
       </div>
     </div>
 
-    <div class="zone sop">
-      <div class="zone-head"><span class="zone-tag">Intra-firm</span></div>
-      <div class="zone-title">S&OP — Cross-Functional Reconciliation</div>
-      <div class="zone-desc">Click a stage to move the monthly cycle forward. Edit the figures below — capacity vs. forecast gap drives the KPI strip.</div>
+    <div class="navgroup-label">Workspace</div>
+    <div class="navitem active" data-page="overview">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Overview
+    </div>
+    <div class="navitem" data-page="cpfr">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6M4 7h16v10H4z"/><path d="M9 7v10M15 7v10"/></svg>
+      CPFR Collaboration
+      <span class="badge" id="navCpfrBadge">0</span>
+    </div>
+    <div class="navitem" data-page="sop">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+      S&amp;OP Planning
+    </div>
+    <div class="navitem" data-page="analytics">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
+      Analytics
+    </div>
+    <div class="navitem" data-page="partners">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M2.5 20c.6-3.6 3-5.6 5.5-5.6s4.9 2 5.5 5.6M14 20c.4-2.6 2-4.2 4-4.2s3.6 1.6 4 4.2"/></svg>
+      Partners
+    </div>
+    <div class="navgroup-label">System</div>
+    <div class="navitem" data-page="settings">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.7 7.7 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.7 7.7 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.7 7.7 0 0 0 0 3L2.7 15l2 3.4 2.2-.9a7.7 7.7 0 0 0 2.6 1.5l.5 2.5h4l.5-2.5a7.7 7.7 0 0 0 2.6-1.5l2.2.9 2-3.4z"/></svg>
+      Settings
+    </div>
 
-      <div class="cycle" id="sopCycle"></div>
-
-      <div class="list-title">Functional Plan (units)</div>
-      <div class="func-row">
-        <div class="func-head"><span class="name">Sales forecast</span><input type="number" id="salesForecast" step="100"></div>
-        <div class="bar-track"><div class="bar-fill" id="barSales" style="background:var(--sop);"></div></div>
-      </div>
-      <div class="func-row">
-        <div class="func-head"><span class="name">Production capacity</span><input type="number" id="prodCapacity" step="100"></div>
-        <div class="bar-track"><div class="bar-fill" id="barProd" style="background:var(--cpfr);"></div></div>
-      </div>
-      <div class="func-row">
-        <div class="func-head"><span class="name">Finance-approved plan</span><input type="number" id="financePlan" step="100"></div>
-        <div class="bar-track"><div class="bar-fill" id="barFinance" style="background:var(--good);"></div></div>
-      </div>
-
-      <div class="list-title">Escalated to Executive Review <span class="mono" style="font-size:9.5px;">(auto-fed from resolved High CPFR items)</span></div>
-      <div id="sopEscalations"></div>
+    <div class="sidebar-foot">
+      <span><span class="status-dot"></span>Live session</span>
+      <span id="saveIndicator">Saved</span>
     </div>
   </div>
 
-  <div class="bridge">
-    <div class="bridge-head">
-      <div class="bridge-title">The eS&OP bridge — live</div>
-      <div class="bridge-note" id="bridgeNote">Resolve a High-severity CPFR exception to see it flow through</div>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span id="pageEyebrow">Workspace ›</span><span id="pageTitle" style="color:var(--text);">Overview</span></div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" placeholder="Search SKUs, partners…">
+        </div>
+        <div class="icon-btn"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot" id="bellDot"></span></div>
+        <div class="avatar">FC</div>
+      </div>
     </div>
-    <div class="bridge-flow">
-      <div class="flow-node"><div class="badge" style="border-color:var(--cpfr);color:var(--cpfr);">CPFR</div><div class="cap">Partner forecast &amp; exception data</div></div>
-      <div class="flow-line"></div>
-      <div class="flow-node"><div class="badge" style="border-color:var(--muted);color:var(--muted);" id="inBadge">0</div><div class="cap">Consolidated into internal demand signal</div></div>
-      <div class="flow-line"></div>
-      <div class="flow-node"><div class="badge" style="border-color:var(--sop);color:var(--sop);">S&amp;OP</div><div class="cap">Reconciled with supply &amp; finance capacity</div></div>
-      <div class="flow-line"></div>
-      <div class="flow-node"><div class="badge" style="border-color:var(--good);color:var(--good);" id="outBadge">✓</div><div class="cap">One unified operating plan</div></div>
+
+    <!-- OVERVIEW PAGE -->
+    <div class="page active" id="page-overview">
+      <div class="page-sub">Consolidated view across all trading-partner collaboration and internal S&amp;OP reconciliation.</div>
+
+      <div class="kpi-strip" id="kpiStrip"></div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Forecast Accuracy — Trend</div>
+            <span class="panel-note">Last 6 cycles</span>
+          </div>
+          <div class="chart-wrap" id="trendChart"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Open Exceptions by Severity</div>
+          </div>
+          <div class="donut-wrap" id="donutChart"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Recent Activity</div>
+          <span class="panel-note">Combined CPFR &amp; S&amp;OP feed</span>
+        </div>
+        <div id="activityFeed"></div>
+      </div>
     </div>
+
+    <!-- CPFR PAGE -->
+    <div class="page" id="page-cpfr">
+      <div class="page-sub">Inter-firm collaboration — joint forecast &amp; exception resolution following the VICS nine-step process.</div>
+
+      <div class="pill-row" id="partnerPills"></div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head">
+          <div class="panel-title" id="cpfrPartnerTitle">Partner Co — Process Progress</div>
+          <span class="tag cpfr">VICS 9-step</span>
+        </div>
+        <div class="steps" id="cpfrSteps"></div>
+        <div class="step-labels">
+          <span>Agree</span><span>Plan</span><span>Forecast</span><span>Identify</span><span>Resolve</span><span>Order fc.</span><span>Generate</span><span>Ship</span><span>Replenish</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Exception Queue</div>
+          <span class="panel-note" id="cpfrQueueCount"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="sku">SKU / Location</th>
+              <th data-sort="partner">Partner</th>
+              <th data-sort="sev">Severity</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cpfrTableBody"></tbody>
+        </table>
+        <div id="cpfrEmpty"></div>
+        <div class="add-row">
+          <input type="text" id="newSku" placeholder="SKU / location">
+          <input type="text" id="newDesc" placeholder="Description">
+          <select id="newSev">
+            <option value="high">High</option>
+            <option value="med" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button class="btn-primary" id="addException">Add exception</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOP PAGE -->
+    <div class="page" id="page-sop">
+      <div class="page-sub">Intra-firm reconciliation — aligning sales, operations and finance into one unified plan.</div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head">
+          <div class="panel-title">Monthly S&amp;OP Cycle</div>
+          <span class="tag sop">5-step process</span>
+        </div>
+        <div class="cycle" id="sopCycle"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Functional Plan (units)</div></div>
+          <div class="func-row">
+            <div class="func-head"><span>Sales forecast</span><input type="number" id="salesForecast" step="100"></div>
+            <div class="bar-track"><div class="bar-fill" id="barSales" style="background:var(--sop);"></div></div>
+          </div>
+          <div class="func-row">
+            <div class="func-head"><span>Production capacity</span><input type="number" id="prodCapacity" step="100"></div>
+            <div class="bar-track"><div class="bar-fill" id="barProd" style="background:var(--cpfr);"></div></div>
+          </div>
+          <div class="func-row">
+            <div class="func-head"><span>Finance-approved plan</span><input type="number" id="financePlan" step="100"></div>
+            <div class="bar-track"><div class="bar-fill" id="barFinance" style="background:var(--good);"></div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Demand vs. Supply — 6-Month View</div></div>
+          <div class="chart-wrap" id="demandSupplyChart"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Escalated to Executive Review</div>
+          <span class="panel-note">Auto-fed from resolved High-severity CPFR items</span>
+        </div>
+        <div id="sopEscalations"></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div class="page" id="page-analytics">
+      <div class="page-sub">Cross-framework performance analysis.</div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Forecast Accuracy — Trend</div></div>
+          <div class="chart-wrap" id="trendChart2"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Exceptions by Severity</div></div>
+          <div class="donut-wrap" id="donutChart2"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Demand vs. Supply — 6-Month View</div></div>
+        <div class="chart-wrap" id="demandSupplyChart2"></div>
+      </div>
+
+      <div class="bridge">
+        <div class="bridge-head">
+          <div class="bridge-title">The eS&amp;OP bridge — live</div>
+          <div class="bridge-note" id="bridgeNote">Resolve a High-severity CPFR exception to see it flow through</div>
+        </div>
+        <div class="bridge-flow">
+          <div class="flow-node"><div class="badge" style="border-color:var(--cpfr);color:var(--cpfr);">CPFR</div><div class="cap">Partner forecast &amp; exception data</div></div>
+          <div class="flow-line"></div>
+          <div class="flow-node"><div class="badge" style="border-color:var(--muted);color:var(--muted);" id="inBadge">0</div><div class="cap">Consolidated into internal demand signal</div></div>
+          <div class="flow-line"></div>
+          <div class="flow-node"><div class="badge" style="border-color:var(--sop);color:var(--sop);">S&amp;OP</div><div class="cap">Reconciled with supply &amp; finance capacity</div></div>
+          <div class="flow-line"></div>
+          <div class="flow-node"><div class="badge" style="border-color:var(--good);color:var(--good);" id="outBadge">✓</div><div class="cap">One unified operating plan</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTNERS PAGE -->
+    <div class="page" id="page-partners">
+      <div class="page-sub">All connected trading partners under CPFR agreements.</div>
+      <div class="panel">
+        <table class="partner-table">
+          <thead><tr><th>Partner</th><th>Status</th><th>Forecast Accuracy</th><th>Open Exceptions</th><th>Last Sync</th></tr></thead>
+          <tbody id="partnersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-settings">
+      <div class="page-sub">Console preferences. Changes are saved to this session.</div>
+      <div class="panel">
+        <div class="settings-row">
+          <div><div class="settings-label">Exception alerts</div><div class="settings-desc">Notify when a new High-severity exception is added</div></div>
+          <div class="toggle on" data-setting="alerts"><div class="knob"></div></div>
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-label">Auto-escalate high severity</div><div class="settings-desc">Resolved High CPFR exceptions feed the S&amp;OP executive review automatically</div></div>
+          <div class="toggle on" data-setting="autoEscalate"><div class="knob"></div></div>
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-label">Weekly digest email</div><div class="settings-desc">Summary of exception queue and reconciliation status</div></div>
+          <div class="toggle" data-setting="digest"><div class="knob"></div></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <div class="settings-row">
+          <div><div class="settings-label">Reset console</div><div class="settings-desc">Restore all demo data to defaults</div></div>
+          <button class="resolve-btn" id="resetBtn">Reset to demo defaults</button>
+        </div>
+      </div>
+    </div>
+
   </div>
-
-  <div class="reset-row"><button class="reset-btn" id="resetBtn">Reset to demo defaults</button></div>
-  <footer>Working prototype · state persists in your browser session via window.storage · figures are illustrative, not live ERP data</footer>
-
 </div>
 
 <script>
-const STORAGE_KEY = 'cpfr-sop-console-state-v1';
+const STORAGE_KEY = 'concord-planning-suite-v1';
+
+const PARTNERS = ['Partner Co', 'RetailCo', 'MegaMart'];
 
 const defaultState = {
-  cpfrStepIndex: 5, // 0-8, number of steps marked "done" up to and including this index
+  cpfrStepIndex: { 'Partner Co': 5, 'RetailCo': 3, 'MegaMart': 7 },
   sopStepIndex: 2,
   sales: 104200,
   prod: 96800,
   finance: 98500,
+  activePartner: 'Partner Co',
   cpfrExceptions: [
-    { id: 'e1', sku: 'SKU-2281 · North DC', desc: 'POS demand 18% above joint forecast', sev: 'high' },
-    { id: 'e2', sku: 'SKU-0937 · Promo W28', desc: 'Order forecast unconfirmed by partner', sev: 'med' },
-    { id: 'e3', sku: 'SKU-4410 · Replenishment', desc: 'Lead time variance within threshold', sev: 'low' }
+    { id:'e1', partner:'Partner Co', sku:'SKU-2281 · North DC', desc:'POS demand 18% above joint forecast', sev:'high' },
+    { id:'e2', partner:'Partner Co', sku:'SKU-0937 · Promo W28', desc:'Order forecast unconfirmed by partner', sev:'med' },
+    { id:'e3', partner:'RetailCo', sku:'SKU-4410 · Replenishment', desc:'Lead time variance within threshold', sev:'low' },
+    { id:'e4', partner:'MegaMart', sku:'SKU-1187 · West DC', desc:'Exception unresolved past 48h SLA', sev:'high' }
   ],
   sopEscalations: [
-    { id: 's1', sku: 'Region: North', desc: 'Capacity shortfall vs. sales forecast — needs decision', sev: 'high' },
-    { id: 's2', sku: 'Product line: Beverages', desc: 'Finance flags margin risk on proposed volume', sev: 'med' }
+    { id:'s1', sku:'Region: North', desc:'Capacity shortfall vs. sales forecast — needs decision', sev:'high' },
+    { id:'s2', sku:'Product line: Beverages', desc:'Finance flags margin risk on proposed volume', sev:'med' }
   ],
-  resolvedFromCpfr: 0
+  resolvedFromCpfr: 0,
+  trend: [78, 81, 79, 84, 86, 87.4],
+  dsChart: { sales:[92,95,99,101,103,104.2], prod:[90,91,93,95,96,96.8] },
+  settings: { alerts:true, autoEscalate:true, digest:false }
 };
 
 let state = JSON.parse(JSON.stringify(defaultState));
 
 const CPFR_LABELS = ['Agree','Plan','Forecast','Identify','Resolve','Order fc.','Generate','Ship','Replenish'];
 const SOP_LABELS = [
-  { n:'01', lbl:'Data\ngathering' },
-  { n:'02', lbl:'Demand\nreview' },
-  { n:'03', lbl:'Supply\nreview' },
-  { n:'04', lbl:'Pre-S&OP\nreconcile' },
-  { n:'05', lbl:'Executive\nS&OP' }
+  { n:'01', lbl:'Data\ngathering' },{ n:'02', lbl:'Demand\nreview' },{ n:'03', lbl:'Supply\nreview' },
+  { n:'04', lbl:'Pre-S&OP\nreconcile' },{ n:'05', lbl:'Executive\nS&OP' }
 ];
 
-function setSaveState(text, color){
-  const el = document.getElementById('saveState');
-  el.innerHTML = '<span class="dot" style="background:'+color+'"></span>'+text;
-}
+function uid(){ return 'x' + Math.random().toString(36).slice(2,9); }
+function sevClass(sev){ return sev; }
+function sevLabel(sev){ return sev==='high'?'High':sev==='med'?'Medium':'Low'; }
 
+/* ---------- persistence ---------- */
 async function saveState(){
   try{
-    setSaveState('Saving…', '#F5A623');
+    document.getElementById('saveIndicator').textContent = 'Saving…';
     const res = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
-    if(res){ setSaveState('Saved', '#6FCF97'); } else { setSaveState('Save failed', '#EF5350'); }
+    document.getElementById('saveIndicator').textContent = res ? 'Saved' : 'Save failed';
   }catch(err){
-    setSaveState('Storage unavailable — using session only', '#EF5350');
+    document.getElementById('saveIndicator').textContent = 'Session only';
   }
 }
-
 async function loadState(){
   try{
     const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && res.value){
-      state = JSON.parse(res.value);
-      setSaveState('Loaded saved session', '#6FCF97');
-    } else {
-      setSaveState('New session', '#7C8CA0');
-    }
-  }catch(err){
-    setSaveState('New session (no saved state)', '#7C8CA0');
-  }
-  render();
+    if(res && res.value){ state = JSON.parse(res.value); }
+  }catch(err){ /* fresh session */ }
+  renderAll();
 }
 
-function uid(){ return 'x' + Math.random().toString(36).slice(2,9); }
+/* ---------- navigation ---------- */
+document.querySelectorAll('.navitem[data-page]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.navitem').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+    document.getElementById('pageTitle').textContent = item.textContent.trim().replace(/\d+$/,'').trim();
+  });
+});
 
-function sevClass(sev){ return sev === 'high' ? 'high' : sev === 'med' ? 'med' : 'low'; }
-function sevLabel(sev){ return sev === 'high' ? 'High' : sev === 'med' ? 'Medium' : 'Low'; }
+/* ---------- charts: SVG line ---------- */
+function lineChart(values, color, height=140){
+  const w = 480, h = height, pad = 10;
+  const max = Math.max(...values) + 3, min = Math.min(...values) - 3;
+  const stepX = (w - pad*2) / (values.length - 1);
+  const pts = values.map((v,i) => {
+    const x = pad + i*stepX;
+    const y = h - pad - ((v - min) / (max - min)) * (h - pad*2);
+    return [x,y];
+  });
+  const path = pts.map((p,i) => (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const area = path + ` L${pts[pts.length-1][0]},${h-pad} L${pts[0][0]},${h-pad} Z`;
+  const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${color}"/>`).join('');
+  const labels = pts.map((p,i) => `<text x="${p[0]}" y="${h-2}" font-size="9" fill="#9AA5B4" text-anchor="middle" font-family="IBM Plex Mono">${values[i].toFixed(0)}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h+14}" style="width:100%;height:auto;">
+    <path d="${area}" fill="${color}" opacity="0.08"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2.2"/>
+    ${dots}${labels}
+  </svg>`;
+}
 
+function multiLineChart(series, height=160){
+  const w = 480, h = height, pad = 10;
+  const all = series.flatMap(s => s.values);
+  const max = Math.max(...all) + 3, min = Math.min(...all) - 3;
+  const n = series[0].values.length;
+  const stepX = (w - pad*2) / (n - 1);
+  const lines = series.map(s => {
+    const pts = s.values.map((v,i) => {
+      const x = pad + i*stepX;
+      const y = h - pad - ((v - min) / (max - min)) * (h - pad*2);
+      return [x,y];
+    });
+    const path = pts.map((p,i) => (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.2"/>` +
+      pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="${s.color}"/>`).join('');
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;">${lines}</svg>`;
+}
+
+function donutChart(parts){
+  const total = parts.reduce((a,p)=>a+p.value,0) || 1;
+  let acc = 0;
+  const stops = parts.map(p => {
+    const start = acc/total*360; acc += p.value;
+    const end = acc/total*360;
+    return `${p.color} ${start}deg ${end}deg`;
+  }).join(', ');
+  const gradient = total ? `conic-gradient(${stops})` : 'var(--border)';
+  const legend = parts.map(p => `<div class="legend-item"><span class="legend-dot" style="background:${p.color};border-radius:50%;"></span>${p.label} — ${p.value}</div>`).join('');
+  return `<div class="donut" style="background:${gradient};"></div><div class="donut-legend">${legend}</div>`;
+}
+
+/* ---------- render pieces ---------- */
 function renderKpis(){
   const gapPct = ((state.prod - state.sales) / state.sales) * 100;
   const openExceptions = state.cpfrExceptions.length;
@@ -281,119 +559,211 @@ function renderKpis(){
 
   const kpis = [
     { label:'Forecast Accuracy', value: accuracy + '%', delta: gapPct <= 0 ? 'Supply constrained' : 'Supply ahead of demand', cls: gapPct <= 0 ? 'down' : 'up' },
-    { label:'Open CPFR Exceptions', value: openExceptions, delta: openExceptions === 0 ? 'Queue clear' : openExceptions + ' pending review', cls: openExceptions === 0 ? 'up' : 'down' },
+    { label:'Open CPFR Exceptions', value: openExceptions, delta: openExceptions===0 ? 'Queue clear' : openExceptions + ' pending review', cls: openExceptions===0 ? 'up' : 'down' },
     { label:'Demand–Supply Gap', value: gapPct.toFixed(1) + '%', delta: gapPct < 0 ? 'Supply short vs. plan' : 'Supply covers plan', cls: gapPct < 0 ? 'down' : 'up' },
-    { label:'Plan Reconciled', value: reconciled + '%', delta: reconciled >= 90 ? 'On track for exec review' : 'Needs alignment work', cls: reconciled >= 90 ? 'up' : 'flat' }
+    { label:'Plan Reconciled', value: reconciled + '%', delta: reconciled>=90 ? 'On track for exec review' : 'Needs alignment work', cls: reconciled>=90 ? 'up' : 'flat' }
   ];
-
   document.getElementById('kpiStrip').innerHTML = kpis.map(k => `
-    <div class="kpi">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}</div>
-      <div class="kpi-delta ${k.cls}">${k.delta}</div>
+    <div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-delta ${k.cls}">${k.delta}</div></div>
+  `).join('');
+
+  document.getElementById('navCpfrBadge').textContent = openExceptions;
+  document.getElementById('navCpfrBadge').style.display = openExceptions>0 ? 'inline-block' : 'none';
+  document.getElementById('bellDot').style.display = openExceptions>0 ? 'block' : 'none';
+}
+
+function renderTrend(){
+  const t = state.trend.slice(0,5).concat([parseFloat((100 - Math.abs((state.prod-state.sales)/state.sales*100)*1.3).toFixed(1))]);
+  const html = lineChart(t, '#0EA5A0');
+  document.getElementById('trendChart').innerHTML = html;
+  document.getElementById('trendChart2').innerHTML = html;
+}
+
+function renderDonut(){
+  const counts = { high:0, med:0, low:0 };
+  state.cpfrExceptions.forEach(e => counts[e.sev]++);
+  const parts = [
+    { label:'High', value:counts.high, color:'#DC2626' },
+    { label:'Medium', value:counts.med, color:'#D97706' },
+    { label:'Low', value:counts.low, color:'#059669' }
+  ];
+  const html = donutChart(parts);
+  document.getElementById('donutChart').innerHTML = html;
+  document.getElementById('donutChart2').innerHTML = html;
+}
+
+function renderDsChart(){
+  const sales = state.dsChart.sales.slice(0,5).concat([+(state.sales/1000).toFixed(1)]);
+  const prod = state.dsChart.prod.slice(0,5).concat([+(state.prod/1000).toFixed(1)]);
+  const html = '<div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#D97706;"></span>Sales forecast (k)</span><span class="legend-item"><span class="legend-dot" style="background:#0EA5A0;"></span>Production capacity (k)</span></div>' +
+    multiLineChart([{values:sales,color:'#D97706'},{values:prod,color:'#0EA5A0'}]);
+  document.getElementById('demandSupplyChart').innerHTML = html;
+  document.getElementById('demandSupplyChart2').innerHTML = html;
+}
+
+function renderActivityFeed(){
+  const items = [];
+  state.cpfrExceptions.slice(0,3).forEach(e => items.push({ icon:'⇄', tag:'CPFR', tagColor:'var(--cpfr)', text:`${e.partner} — ${e.desc}`, sev:e.sev }));
+  state.sopEscalations.slice(0,2).forEach(e => items.push({ icon:'📋', tag:'S&OP', tagColor:'var(--sop)', text:e.desc, sev:e.sev }));
+  if(items.length===0){ document.getElementById('activityFeed').innerHTML = '<div class="empty-note">No recent activity.</div>'; return; }
+  document.getElementById('activityFeed').innerHTML = items.map(it => `
+    <div class="exception" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="tag ${it.tagColor.includes('cpfr')?'cpfr':'sop'}">${it.tag}</span>
+        <span style="font-size:12.5px;">${it.text}</span>
+      </div>
+      <span class="sev ${sevClass(it.sev)}">${sevLabel(it.sev)}</span>
     </div>
   `).join('');
 }
 
-function renderCpfrSteps(){
-  const el = document.getElementById('cpfrSteps');
-  el.innerHTML = CPFR_LABELS.map((_, i) => `<div class="step ${i <= state.cpfrStepIndex ? 'done' : ''}" data-i="${i}"></div>`).join('');
-  el.querySelectorAll('.step').forEach(s => s.addEventListener('click', () => {
-    state.cpfrStepIndex = parseInt(s.dataset.i);
-    render(); saveState();
+function renderPartnerPills(){
+  document.getElementById('partnerPills').innerHTML = PARTNERS.map(p =>
+    `<div class="pill ${p===state.activePartner?'active':''}" data-partner="${p}">${p}</div>`
+  ).join('');
+  document.querySelectorAll('.pill[data-partner]').forEach(p => p.addEventListener('click', () => {
+    state.activePartner = p.dataset.partner;
+    renderAll(); saveState();
   }));
+}
+
+function renderCpfrSteps(){
+  const idx = state.cpfrStepIndex[state.activePartner] ?? 0;
+  document.getElementById('cpfrPartnerTitle').textContent = state.activePartner + ' — Process Progress';
+  const el = document.getElementById('cpfrSteps');
+  el.innerHTML = CPFR_LABELS.map((_,i) => `<div class="step ${i<=idx?'done':''}" data-i="${i}"></div>`).join('');
+  el.querySelectorAll('.step').forEach(s => s.addEventListener('click', () => {
+    state.cpfrStepIndex[state.activePartner] = parseInt(s.dataset.i);
+    renderCpfrSteps(); saveState();
+  }));
+}
+
+let sortKey = 'sev'; let sortDir = 1;
+function renderCpfrTable(){
+  const rows = state.cpfrExceptions.filter(e => e.partner === state.activePartner);
+  document.getElementById('cpfrQueueCount').textContent = `${rows.length} open · ${state.activePartner}`;
+  const order = { high:0, med:1, low:2 };
+  rows.sort((a,b) => sortDir * ((order[a[sortKey]] ?? a[sortKey]) > (order[b[sortKey]] ?? b[sortKey]) ? 1 : -1));
+
+  const body = document.getElementById('cpfrTableBody');
+  const empty = document.getElementById('cpfrEmpty');
+  if(rows.length===0){
+    body.innerHTML = '';
+    empty.innerHTML = '<div class="empty-note">No open exceptions for this partner.</div>';
+    return;
+  }
+  empty.innerHTML = '';
+  body.innerHTML = rows.map(e => `
+    <tr>
+      <td><div class="sku">${e.sku}</div><div class="desc-muted">${e.desc}</div></td>
+      <td>${e.partner}</td>
+      <td><span class="sev ${sevClass(e.sev)}">${sevLabel(e.sev)}</span></td>
+      <td style="text-align:right;"><button class="resolve-btn" data-id="${e.id}">Resolve</button></td>
+    </tr>
+  `).join('');
+  body.querySelectorAll('.resolve-btn').forEach(b => b.addEventListener('click', () => resolveException(b.dataset.id)));
+}
+
+document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', () => {
+  const key = th.dataset.sort;
+  sortDir = (sortKey===key) ? -sortDir : 1;
+  sortKey = key;
+  renderCpfrTable();
+}));
+
+function resolveException(id){
+  const idx = state.cpfrExceptions.findIndex(e => e.id===id);
+  if(idx===-1) return;
+  const ex = state.cpfrExceptions[idx];
+  state.cpfrExceptions.splice(idx,1);
+  state.resolvedFromCpfr += 1;
+  if(ex.sev==='high' && state.settings.autoEscalate){
+    state.sopEscalations.unshift({ id:uid(), sku:ex.sku, desc:'Escalated from resolved CPFR exception: '+ex.desc, sev:'high' });
+  }
+  renderAll(); saveState();
 }
 
 function renderSopCycle(){
   const el = document.getElementById('sopCycle');
-  el.innerHTML = SOP_LABELS.map((s, i) => `
-    <div class="cycle-step ${i === state.sopStepIndex ? 'current' : ''}" data-i="${i}">
+  el.innerHTML = SOP_LABELS.map((s,i) => `
+    <div class="cycle-step ${i===state.sopStepIndex?'current':''}" data-i="${i}">
       <div class="n">${s.n}</div><div class="lbl">${s.lbl.split('\n').join('<br>')}</div>
     </div>`).join('');
   el.querySelectorAll('.cycle-step').forEach(s => s.addEventListener('click', () => {
     state.sopStepIndex = parseInt(s.dataset.i);
-    render(); saveState();
+    renderSopCycle(); saveState();
   }));
-}
-
-function renderExceptionList(){
-  document.getElementById('cpfrCount').textContent = `(${state.cpfrExceptions.length})`;
-  const el = document.getElementById('cpfrList');
-  if(state.cpfrExceptions.length === 0){
-    el.innerHTML = '<div class="empty-note">No open exceptions — queue is clear.</div>';
-    return;
-  }
-  el.innerHTML = state.cpfrExceptions.map(e => `
-    <div class="exception">
-      <div><div class="sku">${e.sku}</div><div class="desc">${e.desc}</div></div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span class="sev ${sevClass(e.sev)}">${sevLabel(e.sev)}</span>
-        <button class="resolve-btn" data-id="${e.id}">Resolve</button>
-      </div>
-    </div>
-  `).join('');
-  el.querySelectorAll('.resolve-btn').forEach(b => b.addEventListener('click', () => resolveException(b.dataset.id)));
-}
-
-function resolveException(id){
-  const idx = state.cpfrExceptions.findIndex(e => e.id === id);
-  if(idx === -1) return;
-  const ex = state.cpfrExceptions[idx];
-  state.cpfrExceptions.splice(idx, 1);
-  state.resolvedFromCpfr += 1;
-
-  if(ex.sev === 'high'){
-    state.sopEscalations.unshift({
-      id: uid(),
-      sku: ex.sku,
-      desc: 'Escalated from resolved CPFR exception: ' + ex.desc,
-      sev: 'high'
-    });
-  }
-  render(); saveState();
-}
-
-function renderEscalations(){
-  const el = document.getElementById('sopEscalations');
-  if(state.sopEscalations.length === 0){
-    el.innerHTML = '<div class="empty-note">No items escalated to executive review.</div>';
-    return;
-  }
-  el.innerHTML = state.sopEscalations.map(e => `
-    <div class="exception">
-      <div><div class="sku">${e.sku}</div><div class="desc">${e.desc}</div></div>
-      <span class="sev ${sevClass(e.sev)}">${sevLabel(e.sev)}</span>
-    </div>
-  `).join('');
 }
 
 function renderFunctionalPlan(){
   document.getElementById('salesForecast').value = state.sales;
   document.getElementById('prodCapacity').value = state.prod;
   document.getElementById('financePlan').value = state.finance;
-
   const max = Math.max(state.sales, state.prod, state.finance) || 1;
-  document.getElementById('barSales').style.width = (state.sales / max * 100) + '%';
-  document.getElementById('barProd').style.width = (state.prod / max * 100) + '%';
-  document.getElementById('barFinance').style.width = (state.finance / max * 100) + '%';
+  document.getElementById('barSales').style.width = (state.sales/max*100)+'%';
+  document.getElementById('barProd').style.width = (state.prod/max*100)+'%';
+  document.getElementById('barFinance').style.width = (state.finance/max*100)+'%';
+}
+
+function renderEscalations(){
+  const el = document.getElementById('sopEscalations');
+  if(state.sopEscalations.length===0){ el.innerHTML = '<div class="empty-note">No items escalated to executive review.</div>'; return; }
+  el.innerHTML = state.sopEscalations.map(e => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;">
+      <div><div class="sku">${e.sku}</div><div class="desc-muted">${e.desc}</div></div>
+      <span class="sev ${sevClass(e.sev)}">${sevLabel(e.sev)}</span>
+    </div>
+  `).join('');
 }
 
 function renderBridge(){
   document.getElementById('inBadge').textContent = state.resolvedFromCpfr;
-  document.getElementById('bridgeNote').textContent =
-    state.resolvedFromCpfr === 0
-      ? 'Resolve a High-severity CPFR exception to see it flow through'
-      : state.resolvedFromCpfr + ' CPFR exception(s) consolidated into the internal demand signal so far';
+  document.getElementById('bridgeNote').textContent = state.resolvedFromCpfr===0
+    ? 'Resolve a High-severity CPFR exception to see it flow through'
+    : state.resolvedFromCpfr + ' CPFR exception(s) consolidated into the internal demand signal so far';
 }
 
-function render(){
+function renderPartnersTable(){
+  document.getElementById('partnersTableBody').innerHTML = PARTNERS.map(p => {
+    const open = state.cpfrExceptions.filter(e => e.partner===p).length;
+    const idx = state.cpfrStepIndex[p] ?? 0;
+    const acc = (78 + idx*2).toFixed(1);
+    return `<tr>
+      <td class="name">${p}</td>
+      <td><span class="status-live"><span class="d"></span>Connected</span></td>
+      <td class="mono">${acc}%</td>
+      <td>${open}</td>
+      <td class="mono">2 hrs ago</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSettings(){
+  document.querySelectorAll('.toggle[data-setting]').forEach(t => {
+    const key = t.dataset.setting;
+    t.classList.toggle('on', !!state.settings[key]);
+    t.onclick = () => {
+      state.settings[key] = !state.settings[key];
+      renderSettings(); saveState();
+    };
+  });
+}
+
+function renderAll(){
   renderKpis();
+  renderTrend();
+  renderDonut();
+  renderDsChart();
+  renderActivityFeed();
+  renderPartnerPills();
   renderCpfrSteps();
+  renderCpfrTable();
   renderSopCycle();
-  renderExceptionList();
-  renderEscalations();
   renderFunctionalPlan();
+  renderEscalations();
   renderBridge();
+  renderPartnersTable();
+  renderSettings();
 }
 
 document.getElementById('addException').addEventListener('click', () => {
@@ -401,25 +771,24 @@ document.getElementById('addException').addEventListener('click', () => {
   const desc = document.getElementById('newDesc').value.trim();
   const sev = document.getElementById('newSev').value;
   if(!sku || !desc) return;
-  state.cpfrExceptions.unshift({ id: uid(), sku, desc, sev });
-  document.getElementById('newSku').value = '';
-  document.getElementById('newDesc').value = '';
-  render(); saveState();
+  state.cpfrExceptions.unshift({ id:uid(), partner:state.activePartner, sku, desc, sev });
+  document.getElementById('newSku').value=''; document.getElementById('newDesc').value='';
+  renderAll(); saveState();
 });
 
 ['salesForecast','prodCapacity','financePlan'].forEach(id => {
-  document.getElementById(id).addEventListener('input', (e) => {
+  document.getElementById(id).addEventListener('input', e => {
     const val = parseFloat(e.target.value) || 0;
-    if(id === 'salesForecast') state.sales = val;
-    if(id === 'prodCapacity') state.prod = val;
-    if(id === 'financePlan') state.finance = val;
-    renderKpis(); renderFunctionalPlan(); saveState();
+    if(id==='salesForecast') state.sales = val;
+    if(id==='prodCapacity') state.prod = val;
+    if(id==='financePlan') state.finance = val;
+    renderKpis(); renderFunctionalPlan(); renderTrend(); renderDsChart(); saveState();
   });
 });
 
 document.getElementById('resetBtn').addEventListener('click', () => {
   state = JSON.parse(JSON.stringify(defaultState));
-  render(); saveState();
+  renderAll(); saveState();
 });
 
 loadState();
