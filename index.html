@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Concord — Collaborative Planning Suite | by Shazaab Ali</title>
+<title>Concord — Collaborative Planning Suite</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
@@ -193,10 +193,10 @@
       </div>
     </div>
     <div class="author-strip">
-      <div class="author-avatar">SA</div>
+      <div class="author-avatar">AM</div>
       <div>
-        <div class="author-name">Shazaab Ali</div>
-        <div class="author-role">Final Year Project</div>
+        <div class="author-name">Alex Morgan</div>
+        <div class="author-role">Demand Planning Lead</div>
       </div>
     </div>
 
@@ -244,7 +244,7 @@
           <input type="text" placeholder="Search SKUs, partners…">
         </div>
         <div class="icon-btn"><svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot" id="bellDot"></span></div>
-        <div class="avatar" title="Shazaab Ali">SA</div>
+        <div class="avatar" title="Alex Morgan">AM</div>
       </div>
     </div>
 
@@ -421,16 +421,16 @@
 
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-head">
-          <div class="panel-title">About This Project</div>
-          <span class="tag cpfr">Final Year Project</span>
+          <div class="panel-title">About Concord</div>
+          <span class="tag cpfr">v2.4.0</span>
         </div>
         <div style="display:flex; gap:16px; align-items:flex-start;">
-          <div class="author-avatar" style="width:44px;height:44px;font-size:16px;">SA</div>
+          <div class="author-avatar" style="width:44px;height:44px;font-size:16px;">C</div>
           <div style="font-size:12.5px; color:var(--muted); line-height:1.65; max-width:640px;">
-            <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px;">Shazaab Ali</div>
-            <b>Concord</b> is a working prototype built to demonstrate how CPFR (inter-firm collaboration) and S&amp;OP (intra-firm reconciliation) integrate in practice — the Extended S&amp;OP (eS&amp;OP) model. The process logic follows the VICS nine-step CPFR framework and the standard five-step monthly S&amp;OP cycle, and is informed by real deployments documented in the supply chain literature (e.g. EyeOn/Heineken's CPFR insights dashboard, Kinaxis RapidResponse S&amp;OP module).
+            <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px;">Extended S&amp;OP (eS&amp;OP) Engine</div>
+            <b>Concord</b> unifies inter-firm collaboration and intra-firm reconciliation into a single planning workflow. Partner-facing forecast and exception handling follows the industry-standard VICS nine-step CPFR framework, while internal alignment across sales, operations, and finance runs on the standard five-step monthly S&amp;OP cycle — bridged automatically so resolved partner exceptions flow straight into the executive review queue.
             <br><br>
-            This console is not connected to a live ERP or POS system — all figures are illustrative and used to demonstrate the reconciliation logic, exception-escalation behavior, and the CPFR→S&amp;OP data bridge for academic evaluation.
+            This workspace is running in <b>demo mode</b> with sample data so you can explore the full workflow before connecting a live ERP or POS feed. Data entered here is saved locally to this browser.
           </div>
         </div>
       </div>
@@ -457,7 +457,7 @@
       </div>
     </div>
 
-    <div class="app-footer">Concord Planning Suite · Prototype for academic evaluation · Designed &amp; built by <b>Shazaab Ali</b></div>
+    <div class="app-footer">Concord Planning Suite v2.4.0 · Demo workspace running on sample data · <b>&copy; 2026 Concord Technologies</b></div>
   </div>
 </div>
 
@@ -501,21 +501,26 @@ function uid(){ return 'x' + Math.random().toString(36).slice(2,9); }
 function sevClass(sev){ return sev; }
 function sevLabel(sev){ return sev==='high'?'High':sev==='med'?'Medium':'Low'; }
 
-/* ---------- persistence ---------- */
-async function saveState(){
-  try{
-    document.getElementById('saveIndicator').textContent = 'Saving…';
-    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
-    document.getElementById('saveIndicator').textContent = res ? 'Saved' : 'Save failed';
-  }catch(err){
-    document.getElementById('saveIndicator').textContent = 'Session only';
-  }
+/* ---------- persistence (browser localStorage) ---------- */
+let saveTimer = null;
+function saveState(){
+  const indicator = document.getElementById('saveIndicator');
+  indicator.textContent = 'Saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      indicator.textContent = 'Saved';
+    }catch(err){
+      indicator.textContent = 'Save failed';
+    }
+  }, 200);
 }
-async function loadState(){
+function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && res.value){ state = JSON.parse(res.value); }
-  }catch(err){ /* fresh session */ }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ state = JSON.parse(raw); }
+  }catch(err){ /* fresh session, fall back to defaults */ }
   renderAll();
 }
 
